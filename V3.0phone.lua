@@ -457,11 +457,10 @@ local function FireWeapon()
     local events = {"Fire", "Shoot", "Click", "Attack", "Activate", "RemoteEvent"}
     for _, evName in ipairs(events) do
         local ev = tool:FindFirstChild(evName)
-            if ev and ev:IsA("RemoteEvent") then
-                ev:FireServer()
-                fired = true
-                break
-            end
+        if ev and ev:IsA("RemoteEvent") then
+            ev:FireServer()
+            fired = true
+            break
         end
     end
     if not fired then pcall(function() tool:Activate() end) end
