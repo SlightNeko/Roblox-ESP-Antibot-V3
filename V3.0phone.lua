@@ -452,11 +452,11 @@ local function FireWeapon()
     if not tool then return end
     local now = tick()
     local lastFire = tool:GetAttribute("LastFireTime") or 0
-    if (now - lastFire) >= (1 / AimConfig.fireRate) then
-        local fired = false
-        local events = {"Fire", "Shoot", "Click", "Attack", "Activate", "RemoteEvent"}
-        for _, evName in ipairs(events) do
-            local ev = tool:FindFirstChild(evName)
+    if (now - lastFire) < (1 / AimConfig.fireRate) then return end
+    local fired = false
+    local events = {"Fire", "Shoot", "Click", "Attack", "Activate", "RemoteEvent"}
+    for _, evName in ipairs(events) do
+        local ev = tool:FindFirstChild(evName)
             if ev and ev:IsA("RemoteEvent") then
                 ev:FireServer()
                 fired = true
@@ -466,6 +466,14 @@ local function FireWeapon()
     end
     if not fired then pcall(function() tool:Activate() end) end
     tool:SetAttribute("LastFireTime", now)
+end
+
+local function SafeCall(func)
+    if type(func) ~= "function" then return end
+    local ok, err = pcall(func)
+    if not ok then
+        --  swallow silent aim errors so RenderStepped never dies
+    end
 end
 
 local function SilentAim()
@@ -2142,12 +2150,12 @@ game:GetService("RunService").RenderStepped:Connect(function()
             if t.drawing and AimConfig.textColorMode ~= "固定" then t.drawing.Color = getDynamicColor(AimConfig.textColorMode) end
         end
         if AimConfig.silentAim then
-            SilentAim()
+            SafeCall(SilentAim)
         else
-            if AimConfig.aimMode == "AI" then AimAI() else AimFunction() end
+            if AimConfig.aimMode == "AI" then SafeCall(AimAI) else SafeCall(AimFunction) end
         end
-        UpdateAimFOVTargetsInfo()
-        UpdateAimLockLine()
+        SafeCall(UpdateAimFOVTargetsInfo)
+        SafeCall(UpdateAimLockLine)
     else
         if AimRedLine then AimRedLine.Visible = false end
         ClearAimTextDrawings()
@@ -2158,16 +2166,16 @@ game:GetService("RunService").RenderStepped:Connect(function()
             if d.tracer and ESPConfig.showTracer and AimConfig.espTracerColorMode ~= "固定" then d.tracer.Color = getDynamicColor(AimConfig.espTracerColorMode) end
             if d.headCircle and ESPConfig.showHeadCircle and AimConfig.espHeadCircleColorMode ~= "固定" then d.headCircle.Color = getDynamicColor(AimConfig.espHeadCircleColorMode) end
         end
-        UpdateESP()
+        SafeCall(UpdateESP)
     else
         for p, _ in pairs(ESPDrawings) do DestroyESPForPlayer(p) end
     end
-    if ThermalESP.enabled then UpdateThermalESP() end
-    UpdateBulletTracers()
+    if ThermalESP.enabled then SafeCall(UpdateThermalESP) end
+    SafeCall(UpdateBulletTracers)
     
     if PanelConfig.dynamicIslandEnabled and Island.container then
-        Island:UpdateFPS()
-        Island:UpdateTarget()
+        SafeCall(function() Island:UpdateFPS() end)
+        SafeCall(function() Island:UpdateTarget() end)
     end
 end)
 
