@@ -445,7 +445,6 @@ local function UpdateAimLockLine()
     AimRedLine.Visible = false
 end
 
-local function AimAI()
 local function FireWeapon()
     local char = game.Players.LocalPlayer.Character
     if not char then return end
@@ -464,9 +463,9 @@ local function FireWeapon()
                 break
             end
         end
-        if not fired then pcall(function() tool:Activate() end) end
-        tool:SetAttribute("LastFireTime", now)
     end
+    if not fired then pcall(function() tool:Activate() end) end
+    tool:SetAttribute("LastFireTime", now)
 end
 
 local function SilentAim()
@@ -645,99 +644,100 @@ local function UpdateESP()
         if p ~= lp then
             if not ESPDrawings[p] then CreateESPForPlayer(p) end
             local d = ESPDrawings[p]
-            if not d then continue end
-            local char = p.Character
-            local hum = char and char:FindFirstChild("Humanoid")
-            local head = char and char:FindFirstChild("Head")
-            local shouldRender = false
-            if char and hum and hum.Health > 0 and head then
-                if (not ESPConfig.teamCheck or not IsSameTeam(p)) then
-                    local headPos, headOn = cam:WorldToViewportPoint(head.Position)
-                    if headOn then
-                        local footWorld = getFootPosition(char)
-                        local footPos, footOn = cam:WorldToViewportPoint(footWorld)
-                        if not footOn then footPos = Vector3.new(headPos.X, headPos.Y + 2, headPos.Z) end
-                        local topY = headPos.Y
-                        local bottomY = footPos.Y
-                        local boxHeight = math.abs(topY - bottomY)
-                        local boxWidth = boxHeight * 0.5
-                        local boxPos = Vector2.new(headPos.X - boxWidth/2, topY)
-                        local boxCol = getCurrentColor(AimConfig.espBoxColorMode, AimConfig.espBoxColorFixed)
-                        local tracerCol = getCurrentColor(AimConfig.espTracerColorMode, AimConfig.espTracerColorFixed)
-                        local headCircleCol = getCurrentColor(AimConfig.espHeadCircleColorMode, AimConfig.espHeadCircleColorFixed)
-                        if ESPConfig.showBox then
-                            d.box.Size = Vector2.new(boxWidth, boxHeight)
-                            d.box.Position = boxPos
-                            d.box.Color = boxCol
-                            d.box.Visible = true
-                        else
-                            d.box.Visible = false
-                        end
-                        if ESPConfig.showHeadCircle then
-                            local headSize = head.Size
-                            local rightPos = head.Position + Vector3.new(headSize.X/2, 0, 0)
-                            local topPos = head.Position + Vector3.new(0, headSize.Y/2, 0)
-                            local rightScreen, _ = cam:WorldToViewportPoint(rightPos)
-                            local topScreen, _ = cam:WorldToViewportPoint(topPos)
-                            local radiusX = math.abs(rightScreen.X - headPos.X)
-                            local radiusY = math.abs(topScreen.Y - headPos.Y)
-                            local radius = (radiusX + radiusY) / 2
-                            radius = safeClamp(radius, 8, 50)
-                            d.headCircle.Radius = radius
-                            d.headCircle.Position = Vector2.new(headPos.X, headPos.Y)
-                            d.headCircle.Color = headCircleCol
-                            d.headCircle.Visible = true
-                        else
-                            d.headCircle.Visible = false
-                        end
-                        if ESPConfig.showHealth then
-                            d.health.Position = Vector2.new(headPos.X, headPos.Y - boxHeight/2 - 20)
-                            d.health.Text = "❤ " .. math.floor(hum.Health)
-                            d.health.Color = Color3.fromRGB(255,80,80)
-                            d.health.Visible = true
-                        else
-                            d.health.Visible = false
-                        end
-                        if ESPConfig.showName then
-                            d.name.Position = Vector2.new(headPos.X, headPos.Y - boxHeight/2 - 40)
-                            d.name.Text = p.Name
-                            d.name.Color = Color3.new(1,1,1)
-                            d.name.Visible = true
-                        else
-                            d.name.Visible = false
-                        end
-                        if ESPConfig.showDistance then
-                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                            local dist = 0
-                            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and hrp then
-                                dist = (lp.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+            if d then
+                local char = p.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                local head = char and char:FindFirstChild("Head")
+                local shouldRender = false
+                if char and hum and hum.Health > 0 and head then
+                    if (not ESPConfig.teamCheck or not IsSameTeam(p)) then
+                        local headPos, headOn = cam:WorldToViewportPoint(head.Position)
+                        if headOn then
+                            local footWorld = getFootPosition(char)
+                            local footPos, footOn = cam:WorldToViewportPoint(footWorld)
+                            if not footOn then footPos = Vector3.new(headPos.X, headPos.Y + 2, headPos.Z) end
+                            local topY = headPos.Y
+                            local bottomY = footPos.Y
+                            local boxHeight = math.abs(topY - bottomY)
+                            local boxWidth = boxHeight * 0.5
+                            local boxPos = Vector2.new(headPos.X - boxWidth/2, topY)
+                            local boxCol = getCurrentColor(AimConfig.espBoxColorMode, AimConfig.espBoxColorFixed)
+                            local tracerCol = getCurrentColor(AimConfig.espTracerColorMode, AimConfig.espTracerColorFixed)
+                            local headCircleCol = getCurrentColor(AimConfig.espHeadCircleColorMode, AimConfig.espHeadCircleColorFixed)
+                            if ESPConfig.showBox then
+                                d.box.Size = Vector2.new(boxWidth, boxHeight)
+                                d.box.Position = boxPos
+                                d.box.Color = boxCol
+                                d.box.Visible = true
+                            else
+                                d.box.Visible = false
                             end
-                            d.distance.Position = Vector2.new(headPos.X, headPos.Y + boxHeight/2 + 20)
-                            d.distance.Text = math.floor(dist) .. "m"
-                            d.distance.Color = Color3.fromRGB(255,255,100)
-                            d.distance.Visible = true
-                        else
-                            d.distance.Visible = false
+                            if ESPConfig.showHeadCircle then
+                                local headSize = head.Size
+                                local rightPos = head.Position + Vector3.new(headSize.X/2, 0, 0)
+                                local topPos = head.Position + Vector3.new(0, headSize.Y/2, 0)
+                                local rightScreen, _ = cam:WorldToViewportPoint(rightPos)
+                                local topScreen, _ = cam:WorldToViewportPoint(topPos)
+                                local radiusX = math.abs(rightScreen.X - headPos.X)
+                                local radiusY = math.abs(topScreen.Y - headPos.Y)
+                                local radius = (radiusX + radiusY) / 2
+                                radius = safeClamp(radius, 8, 50)
+                                d.headCircle.Radius = radius
+                                d.headCircle.Position = Vector2.new(headPos.X, headPos.Y)
+                                d.headCircle.Color = headCircleCol
+                                d.headCircle.Visible = true
+                            else
+                                d.headCircle.Visible = false
+                            end
+                            if ESPConfig.showHealth then
+                                d.health.Position = Vector2.new(headPos.X, headPos.Y - boxHeight/2 - 20)
+                                d.health.Text = "❤ " .. math.floor(hum.Health)
+                                d.health.Color = Color3.fromRGB(255,80,80)
+                                d.health.Visible = true
+                            else
+                                d.health.Visible = false
+                            end
+                            if ESPConfig.showName then
+                                d.name.Position = Vector2.new(headPos.X, headPos.Y - boxHeight/2 - 40)
+                                d.name.Text = p.Name
+                                d.name.Color = Color3.new(1,1,1)
+                                d.name.Visible = true
+                            else
+                                d.name.Visible = false
+                            end
+                            if ESPConfig.showDistance then
+                                local hrp = char:FindFirstChild("HumanoidRootPart")
+                                local dist = 0
+                                if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and hrp then
+                                    dist = (lp.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                                end
+                                d.distance.Position = Vector2.new(headPos.X, headPos.Y + boxHeight/2 + 20)
+                                d.distance.Text = math.floor(dist) .. "m"
+                                d.distance.Color = Color3.fromRGB(255,255,100)
+                                d.distance.Visible = true
+                            else
+                                d.distance.Visible = false
+                            end
+                            if ESPConfig.showTracer then
+                                d.tracer.From = cam.ViewportSize/2
+                                d.tracer.To = Vector2.new(headPos.X, headPos.Y)
+                                d.tracer.Color = tracerCol
+                                d.tracer.Visible = true
+                            else
+                                d.tracer.Visible = false
+                            end
+                            shouldRender = true
                         end
-                        if ESPConfig.showTracer then
-                            d.tracer.From = cam.ViewportSize/2
-                            d.tracer.To = Vector2.new(headPos.X, headPos.Y)
-                            d.tracer.Color = tracerCol
-                            d.tracer.Visible = true
-                        else
-                            d.tracer.Visible = false
-                        end
-                        shouldRender = true
                     end
                 end
-            end
-            if not shouldRender then
-                if d.box then d.box.Visible = false end
-                if d.health then d.health.Visible = false end
-                if d.name then d.name.Visible = false end
-                if d.distance then d.distance.Visible = false end
-                if d.tracer then d.tracer.Visible = false end
-                if d.headCircle then d.headCircle.Visible = false end
+                if not shouldRender then
+                    if d.box then d.box.Visible = false end
+                    if d.health then d.health.Visible = false end
+                    if d.name then d.name.Visible = false end
+                    if d.distance then d.distance.Visible = false end
+                    if d.tracer then d.tracer.Visible = false end
+                    if d.headCircle then d.headCircle.Visible = false end
+                end
             end
         end
     end
