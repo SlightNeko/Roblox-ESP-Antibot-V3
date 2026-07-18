@@ -35,6 +35,7 @@ local AimConfig = {
     aimMode = "AI",
     aimModeType = "普通",
     autoFire = false,
+    silentAim = false,
     fireRate = 10,
     dynamicFOV = false,
     dynamicFOVScale = 1.5,
@@ -207,14 +208,18 @@ local BulletTracerObjects = {}
 local function CreateBulletTracer(startPos, endPos)
     if not BulletTracers.enabled then return end
     local line = Drawing.new("Line")
-    line.From = startPos
-    line.To = endPos
     line.Thickness = BulletTracers.thickness
     line.Color = BulletTracers.colorMode == "固定" and BulletTracers.colorFixed or Color3.new(1,1,1)
-    line.Transparency = 1
-    line.Visible = true
+    line.Transparency = 0
+    line.Visible = false
+    line.Thickness = BulletTracers.thickness
+    line.Color = BulletTracers.colorMode == "固定" and BulletTracers.colorFixed or Color3.new(1,1,1)
+    line.Transparency = 0
+    line.Visible = false
     table.insert(BulletTracerObjects, {
         Line = line,
+        startPos = startPos,
+        endPos = endPos,
         startTime = tick(),
         lifetime = BulletTracers.lifetime,
     })
@@ -222,6 +227,7 @@ end
 
 local function UpdateBulletTracers()
     local now = tick()
+    local camera = workspace.CurrentCamera
     for i = #BulletTracerObjects, 1, -1 do
         local t = BulletTracerObjects[i]
         local elapsed = now - t.startTime
@@ -231,6 +237,15 @@ local function UpdateBulletTracers()
         else
             local alpha = 1 - (elapsed / t.lifetime)
             t.Line.Transparency = 1 - alpha
+            local sp, onStart = camera:WorldToViewportPoint(t.startPos)
+            local ep, onEnd = camera:WorldToViewportPoint(t.endPos)
+            if onStart and onEnd then
+                t.Line.From = Vector2.new(sp.X, sp.Y)
+                t.Line.To = Vector2.new(ep.X, ep.Y)
+                t.Line.Visible = true
+            else
+                t.Line.Visible = false
+            end
         end
     end
 end
@@ -471,7 +486,7 @@ local function SafeCall(func)
     if type(func) ~= "function" then return end
     local ok, err = pcall(func)
     if not ok then
-        --  swallow silent aim errors so RenderStepped never dies
+        warn("[Antibot] SafeCall error: " .. tostring(err))
     end
 end
 
@@ -494,9 +509,8 @@ local function SilentAim()
                 local lookPos = Vector3.new(pos.X, hrp.Position.Y, pos.Z)
                 hrp.CFrame = CFrame.new(hrp.Position, lookPos)
                 FireWeapon()
-                if AimConfig.autoFire and BulletTracers.enabled then
-                    local cam = workspace.CurrentCamera
-                    local startPos = cam.CFrame.Position + cam.CFrame.LookVector * 2
+                if BulletTracers.enabled then
+                    local startPos = hrp.Position + Vector3.new(0, 1.5, 0)
                     CreateBulletTracer(startPos, pos)
                 end
                 hrp.CFrame = originalCF
@@ -2148,9 +2162,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
         for _, t in pairs(AimTextDrawings) do
             if t.drawing and AimConfig.textColorMode ~= "固定" then t.drawing.Color = getDynamicColor(AimConfig.textColorMode) end
         end
-        if AimConfig.silentAim then
-            SafeCall(SilentAim)
-        else
+        if not AimConfig.silentAim then
             if AimConfig.aimMode == "AI" then SafeCall(AimAI) else SafeCall(AimFunction) end
         end
         SafeCall(UpdateAimFOVTargetsInfo)
@@ -2158,6 +2170,9 @@ game:GetService("RunService").RenderStepped:Connect(function()
     else
         if AimRedLine then AimRedLine.Visible = false end
         ClearAimTextDrawings()
+    end
+    if AimConfig.silentAim then
+        SafeCall(SilentAim)
     end
     if ESPConfig.enabled then
         for _, d in pairs(ESPDrawings) do
